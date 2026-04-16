@@ -2,19 +2,69 @@ import { useState, useEffect, useCallback } from "react";
 import type { RSIDataPoint } from "@/lib/rsiTypes";
 import { generateRSIData } from "@/lib/rsiData";
 
+interface RSIResponse {
+  success: boolean;
+  date?: string;
+  interval?: number;
+  dataPoints?: number;
+  data?: RSIDataPoint[];
+  error?: string;
+}
+
 export function useRSIData(refreshInterval = 60000, intervalMinutes = 5) {
   const [data, setData] = useState<RSIDataPoint[]>([]);
   const [date, setDate] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
 
-  const refresh = useCallback(() => {
-    setLoading(true);
-    const simulated = generateRSIData(Date.now() % 1000, intervalMinutes);
-    setData(simulated);
-    setDate(new Date().toLocaleDateString("en-IN"));
-    setLoading(false);
-    setLastRefresh(new Date());
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase not configured");
+      }
+
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/nifty-rsi?interval=${intervalMinutes}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'apikey': supabaseKey,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const json: RSIResponse = await res.json();
+
+      if (json.success && json.data && json.data.length > 0) {
+        setData(json.data);
+        setDate(json.date || "");
+        setUsingFallback(false);
+      } else {
+        throw new Error(json.error || "No live data available");
+      }
+    } catch (err) {
+      console.warn("Live data unavailable, using simulated:", err);
+      const simulated = generateRSIData(42, intervalMinutes);
+      setData(simulated);
+      setDate("Simulated");
+      setUsingFallback(true);
+      setError(err instanceof Error ? err.message : "Failed to fetch live data");
+    } finally {
+      setLoading(false);
+      setLastRefresh(new Date());
+    }
   }, [intervalMinutes]);
 
   useEffect(() => {
@@ -23,5 +73,5 @@ export function useRSIData(refreshInterval = 60000, intervalMinutes = 5) {
     return () => clearInterval(interval);
   }, [refresh, refreshInterval]);
 
-  return { data, date, loading, lastRefresh, refresh };
+  return { data, date, loading, error, lastRefresh, usingFallback, refresh };
 }
