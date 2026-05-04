@@ -15,10 +15,16 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   let greenActive = false; // long/CALL-style position open
   let redActive = false;   // short/PUT-style position open
 
+  // Bar change per row = niftyPrice[i] - niftyPrice[i-1]
+  const barChanges: (number | null)[] = data.map((row, i) =>
+    i > 0 ? row.niftyPrice - data[i - 1].niftyPrice : null
+  );
+
   for (let i = 0; i < data.length; i++) {
-    const row = data[i];
-    const prev = i > 0 ? data[i - 1] : null;
-    const diff = prev ? row.niftyPrice - prev.niftyPrice : null;
+    // Δ Bar Change = barChange[i] - barChange[i-1]
+    const curBC = barChanges[i];
+    const prevBC = i > 0 ? barChanges[i - 1] : null;
+    const diff = curBC != null && prevBC != null ? curBC - prevBC : null;
     const tags: Tag[] = [];
 
     if (diff == null) {
