@@ -88,6 +88,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               const barChange = prevRow ? row.niftyPrice - prevRow.niftyPrice : null;
               const tags = signals[idx];
               const delta = deltas[idx];
+              const calc = calcs[idx];
 
               return (
                 <TableRow key={row.time} className="border-border hover:bg-secondary/40 transition-colors">
@@ -122,7 +123,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                             : "text-foreground"
                         }`}
                       >
-                        {delta != null ? `${delta > 0 ? "+" : ""}${delta}` : "—"}
+                        {calc ?? "—"}
                       </span>
                       {tags.map((t, i) => (
                         <span
