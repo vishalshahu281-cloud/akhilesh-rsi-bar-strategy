@@ -12,6 +12,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   // If both a green and red event collide on the same row, stack them vertically.
   type Tag = { label: "TAKE" | "LEAVE" | "-"; color: "green" | "red" | "muted" };
   const signals: Tag[][] = [];
+  const deltas: (number | null)[] = [];
   let greenActive = false; // long/CALL-style position open
   let redActive = false;   // short/PUT-style position open
 
@@ -24,7 +25,8 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     // Δ Bar Change = barChange[i] - barChange[i-1]
     const curBC = barChanges[i];
     const prevBC = i > 0 ? barChanges[i - 1] : null;
-    const diff = curBC != null && prevBC != null ? curBC - prevBC : null;
+    const diff = curBC != null && prevBC != null ? Math.round(curBC - prevBC) : null;
+    deltas.push(diff);
     const tags: Tag[] = [];
 
     if (diff == null) {
