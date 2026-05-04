@@ -13,6 +13,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   type Tag = { label: "TAKE" | "LEAVE" | "-"; color: "green" | "red" | "muted" };
   const signals: Tag[][] = [];
   const deltas: (number | null)[] = [];
+  const calcs: (string | null)[] = [];
   let greenActive = false; // long/CALL-style position open
   let redActive = false;   // short/PUT-style position open
 
@@ -27,6 +28,13 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     const prevBC = i > 0 ? barChanges[i - 1] : null;
     const diff = curBC != null && prevBC != null ? Math.round(curBC - prevBC) : null;
     deltas.push(diff);
+    if (curBC != null && prevBC != null) {
+      const a = Math.round(curBC);
+      const b = Math.round(prevBC);
+      calcs.push(`${a} − (${b}) = ${a - b}`);
+    } else {
+      calcs.push(null);
+    }
     const tags: Tag[] = [];
 
     if (diff == null) {
@@ -80,6 +88,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               const barChange = prevRow ? row.niftyPrice - prevRow.niftyPrice : null;
               const tags = signals[idx];
               const delta = deltas[idx];
+              const calc = calcs[idx];
 
               return (
                 <TableRow key={row.time} className="border-border hover:bg-secondary/40 transition-colors">
@@ -114,7 +123,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                             : "text-foreground"
                         }`}
                       >
-                        {delta != null ? `${delta > 0 ? "+" : ""}${delta}` : "—"}
+                        {calc ?? "—"}
                       </span>
                       {tags.map((t, i) => (
                         <span
