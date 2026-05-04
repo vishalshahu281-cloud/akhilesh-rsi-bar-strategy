@@ -12,29 +12,13 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   // If both a green and red event collide on the same row, stack them vertically.
   type Tag = { label: "TAKE" | "LEAVE" | "-"; color: "green" | "red" | "muted" };
   const signals: Tag[][] = [];
-  const deltas: (number | null)[] = [];
-  const calcs: (string | null)[] = [];
   let greenActive = false; // long/CALL-style position open
   let redActive = false;   // short/PUT-style position open
 
-  // Bar change per row = niftyPrice[i] - niftyPrice[i-1]
-  const barChanges: (number | null)[] = data.map((row, i) =>
-    i > 0 ? row.niftyPrice - data[i - 1].niftyPrice : null
-  );
-
   for (let i = 0; i < data.length; i++) {
-    // Δ Bar Change = barChange[i] - barChange[i-1]
-    const curBC = barChanges[i];
-    const prevBC = i > 0 ? barChanges[i - 1] : null;
-    const diff = curBC != null && prevBC != null ? Math.round(curBC - prevBC) : null;
-    deltas.push(diff);
-    if (curBC != null && prevBC != null) {
-      const a = Math.round(curBC);
-      const b = Math.round(prevBC);
-      calcs.push(`${a} − (${b}) = ${a - b}`);
-    } else {
-      calcs.push(null);
-    }
+    const row = data[i];
+    const prev = i > 0 ? data[i - 1] : null;
+    const diff = prev ? row.niftyPrice - prev.niftyPrice : null;
     const tags: Tag[] = [];
 
     if (diff == null) {
@@ -87,8 +71,6 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               const rsiDiff = row.rsi != null && prevRow?.rsi != null ? row.rsi - prevRow.rsi : null;
               const barChange = prevRow ? row.niftyPrice - prevRow.niftyPrice : null;
               const tags = signals[idx];
-              const delta = deltas[idx];
-              const calc = calcs[idx];
 
               return (
                 <TableRow key={row.time} className="border-border hover:bg-secondary/40 transition-colors">
@@ -97,7 +79,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                     {row.niftyPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className={`font-mono text-sm text-right ${barChange != null ? (barChange >= 0 ? "text-bullish" : "text-bearish") : "text-muted-foreground"}`}>
-                    {barChange != null ? `${barChange >= 0 ? "+" : ""}${Math.round(barChange)}` : "—"}
+                    {barChange != null ? `${barChange >= 0 ? "+" : ""}${barChange.toFixed(2)}` : "—"}
                   </TableCell>
                   <TableCell className={`font-mono text-sm text-right font-semibold ${(row.rsi ?? 0) >= 70 ? "text-overbought" : (row.rsi ?? 0) <= 30 ? "text-bullish" : "text-foreground"}`}>
                     {row.rsi != null ? row.rsi.toFixed(2) : "—"}
@@ -112,19 +94,6 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-0.5">
-                      <span
-                        className={`font-mono text-xs ${
-                          delta == null
-                            ? "text-muted-foreground"
-                            : delta > 0
-                            ? "text-bullish"
-                            : delta < 0
-                            ? "text-bearish"
-                            : "text-foreground"
-                        }`}
-                      >
-                        {calc ?? "—"}
-                      </span>
                       {tags.map((t, i) => (
                         <span
                           key={i}
