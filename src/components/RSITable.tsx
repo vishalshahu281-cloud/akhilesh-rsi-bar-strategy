@@ -13,6 +13,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   type Tag = { label: "TAKE" | "LEAVE" | "-"; color: "green" | "red" | "muted" };
   const signals: Tag[][] = [];
   const deltas: (number | null)[] = [];
+  const calcs: (string | null)[] = [];
   let greenActive = false; // long/CALL-style position open
   let redActive = false;   // short/PUT-style position open
 
@@ -27,6 +28,13 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     const prevBC = i > 0 ? barChanges[i - 1] : null;
     const diff = curBC != null && prevBC != null ? Math.round(curBC - prevBC) : null;
     deltas.push(diff);
+    if (curBC != null && prevBC != null) {
+      const a = Math.round(curBC);
+      const b = Math.round(prevBC);
+      calcs.push(`${a} − (${b}) = ${a - b}`);
+    } else {
+      calcs.push(null);
+    }
     const tags: Tag[] = [];
 
     if (diff == null) {
