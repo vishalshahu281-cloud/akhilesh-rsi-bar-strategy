@@ -12,13 +12,18 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   // If both a green and red event collide on the same row, stack them vertically.
   type Tag = { label: "TAKE" | "LEAVE" | "-"; color: "green" | "red" | "muted" };
   const signals: Tag[][] = [];
-  let greenActive = false; // long/CALL-style position open
-  let redActive = false;   // short/PUT-style position open
+  const deltas: (number | null)[] = [];
+  let greenActive = false;
+  let redActive = false;
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const prev = i > 0 ? data[i - 1] : null;
-    const diff = prev ? row.niftyPrice - prev.niftyPrice : null;
+    const prev2 = i > 1 ? data[i - 2] : null;
+    const barChange = prev ? row.niftyPrice - prev.niftyPrice : null;
+    const prevBarChange = prev && prev2 ? prev.niftyPrice - prev2.niftyPrice : null;
+    const diff = barChange != null && prevBarChange != null ? barChange - prevBarChange : null;
+    deltas.push(diff);
     const tags: Tag[] = [];
 
     if (diff == null) {
@@ -71,6 +76,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               const rsiDiff = row.rsi != null && prevRow?.rsi != null ? row.rsi - prevRow.rsi : null;
               const barChange = prevRow ? row.niftyPrice - prevRow.niftyPrice : null;
               const tags = signals[idx];
+              const delta = deltas[idx];
 
               return (
                 <TableRow key={row.time} className="border-border hover:bg-secondary/40 transition-colors">
@@ -94,8 +100,8 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-0.5">
-                      <span className={`font-mono text-sm ${barChange != null ? (barChange >= 0 ? "text-bullish" : "text-bearish") : "text-muted-foreground"}`}>
-                        {barChange != null ? `${barChange >= 0 ? "+" : ""}${barChange.toFixed(2)}` : "—"}
+                      <span className={`font-mono text-sm ${delta != null ? (delta >= 0 ? "text-bullish" : "text-bearish") : "text-muted-foreground"}`}>
+                        {delta != null ? `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}` : "—"}
                       </span>
                       {tags.map((t, i) => (
                         <span
