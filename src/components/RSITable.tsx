@@ -22,7 +22,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     const prev2 = i > 1 ? data[i - 2] : null;
     const barChange = prev ? row.niftyPrice - prev.niftyPrice : null;
     const prevBarChange = prev && prev2 ? prev.niftyPrice - prev2.niftyPrice : null;
-    const diff = barChange != null && prevBarChange != null ? barChange - prevBarChange : null;
+    const diff = barChange != null && prevBarChange != null ? barChange + prevBarChange : null;
     deltas.push(diff);
     const tags: Tag[] = [];
 
