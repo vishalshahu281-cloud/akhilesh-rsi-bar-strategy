@@ -94,6 +94,9 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-0.5">
+                      <span className={`font-mono text-sm ${barChange != null ? (barChange >= 0 ? "text-bullish" : "text-bearish") : "text-muted-foreground"}`}>
+                        {barChange != null ? `${barChange >= 0 ? "+" : ""}${barChange.toFixed(2)}` : "—"}
+                      </span>
                       {tags.map((t, i) => (
                         <span
                           key={i}
