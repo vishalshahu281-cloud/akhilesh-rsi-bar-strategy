@@ -29,7 +29,12 @@ async function nseFetch(symbol: string) {
     const body = await res.text();
     throw new Error(`NSE ${res.status}: ${body.slice(0, 200)}`);
   }
-  return await res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`NSE non-JSON (len=${text.length}): ${text.slice(0, 200)}`);
+  }
 }
 
 function nearestStrike(strikes: number[], target: number): number {
