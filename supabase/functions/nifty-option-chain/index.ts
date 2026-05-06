@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
 
     const data = await nseFetch(symbol);
     const records = data?.records;
+    console.log('NSE keys:', Object.keys(data ?? {}), 'records keys:', Object.keys(records ?? {}), 'rowCount:', records?.data?.length, 'underlying:', records?.underlyingValue);
     const underlying: number = records?.underlyingValue ?? 0;
     const allRows: any[] = records?.data ?? [];
 
