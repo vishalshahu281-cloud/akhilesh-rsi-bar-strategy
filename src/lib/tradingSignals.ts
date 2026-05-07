@@ -11,16 +11,16 @@ export interface BarSignal {
   time: string;
   niftyPrice: number;
   delta: number | null;
+  rsiDelta: number | null;
   events: SignalEvent[];
 }
 
 /**
+ * Combined signals: a TAKE/LEAVE fires when EITHER
+ *   |Δ Bar Change| >= 18   OR   |Δ RSI 21| >= 3
  * Δ Bar Change = (current bar change) + (previous bar change)
- * State machine:
- *  - GREEN_TAKE when delta >= +18 and green not active
- *  - GREEN_LEAVE when green active and delta <= -18
- *  - RED_TAKE when delta <= -18 and red not active
- *  - RED_LEAVE when red active and delta >= +18
+ * Δ RSI 21     = (current RSI bracket) + (previous RSI bracket)
+ * Independent green/red state machines.
  */
 export function computeBarSignals(data: RSIDataPoint[]): BarSignal[] {
   const out: BarSignal[] = [];
@@ -35,26 +35,35 @@ export function computeBarSignals(data: RSIDataPoint[]): BarSignal[] {
     const prevBarChange =
       prev && prev2 ? prev.niftyPrice - prev2.niftyPrice : null;
     const delta =
-      barChange != null && prevBarChange != null
-        ? barChange + prevBarChange
+      barChange != null ? barChange + (prevBarChange ?? 0) : null;
+    const currRsiBracket =
+      row.rsi != null && prev?.rsi != null ? row.rsi - prev.rsi : null;
+    const prevRsiBracket =
+      prev?.rsi != null && prev2?.rsi != null ? prev.rsi - prev2.rsi : null;
+    const rsiDelta =
+      currRsiBracket != null
+        ? currRsiBracket + (prevRsiBracket ?? 0)
         : null;
 
+    const greenTrigger =
+      (delta != null && delta >= 18) || (rsiDelta != null && rsiDelta >= 3);
+    const redTrigger =
+      (delta != null && delta <= -18) || (rsiDelta != null && rsiDelta <= -3);
+
     const events: SignalEvent[] = [];
-    if (delta != null) {
-      if (delta >= 18 && !greenActive) {
-        events.push("GREEN_TAKE");
-        greenActive = true;
-      } else if (greenActive && delta <= -18) {
-        events.push("GREEN_LEAVE");
-        greenActive = false;
-      }
-      if (delta <= -18 && !redActive) {
-        events.push("RED_TAKE");
-        redActive = true;
-      } else if (redActive && delta >= 18) {
-        events.push("RED_LEAVE");
-        redActive = false;
-      }
+    if (greenTrigger && !greenActive) {
+      events.push("GREEN_TAKE");
+      greenActive = true;
+    } else if (greenActive && redTrigger) {
+      events.push("GREEN_LEAVE");
+      greenActive = false;
+    }
+    if (redTrigger && !redActive) {
+      events.push("RED_TAKE");
+      redActive = true;
+    } else if (redActive && greenTrigger) {
+      events.push("RED_LEAVE");
+      redActive = false;
     }
 
     out.push({
@@ -62,6 +71,7 @@ export function computeBarSignals(data: RSIDataPoint[]): BarSignal[] {
       time: row.time,
       niftyPrice: row.niftyPrice,
       delta,
+      rsiDelta,
       events,
     });
   }

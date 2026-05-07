@@ -145,7 +145,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar signal • Premium base ₹{ENTRY_PREMIUM} • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) signal • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
@@ -166,7 +166,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
 
       {trades.length === 0 ? (
         <div className="p-8 text-center font-mono text-sm text-muted-foreground">
-          No option trades triggered yet — waiting for Δ Bar Change ≥ ±18.
+          No option trades triggered yet — waiting for Δ Bar Change ≥ ±18 or Δ RSI 21 ≥ ±3.
         </div>
       ) : (
         <div className="max-h-[480px] overflow-auto mt-4">
