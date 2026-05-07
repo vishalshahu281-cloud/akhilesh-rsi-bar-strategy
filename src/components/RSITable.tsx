@@ -65,9 +65,13 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
 
     signals.push(tags);
 
-    // Δ RSI 21 = current RSI - previous RSI
+    // Δ RSI 21 = (current RSI bracket) + (previous RSI bracket)
+    // where RSI bracket = current RSI - previous RSI.
+    // If previous bracket isn't available yet, fall back to just the current bracket.
     const rsiDelta =
-      row.rsi != null && prev?.rsi != null ? row.rsi - prev.rsi : null;
+      currRsiBracket != null
+        ? currRsiBracket + (prevRsiBracket ?? 0)
+        : null;
     rsiDeltas.push(rsiDelta);
     const rTags: Tag[] = [];
     if (rsiDelta == null) {
