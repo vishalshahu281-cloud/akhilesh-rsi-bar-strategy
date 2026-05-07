@@ -16,6 +16,12 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
   let greenActive = false;
   let redActive = false;
 
+  // Δ RSI 21 signals (independent state machine)
+  const rsiSignals: Tag[][] = [];
+  const rsiDeltas: (number | null)[] = [];
+  let rsiGreenActive = false;
+  let rsiRedActive = false;
+
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     const prev = i > 0 ? data[i - 1] : null;
@@ -51,6 +57,32 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     }
 
     signals.push(tags);
+
+    // Δ RSI 21 = current RSI - previous RSI
+    const rsiDelta =
+      row.rsi != null && prev?.rsi != null ? row.rsi - prev.rsi : null;
+    rsiDeltas.push(rsiDelta);
+    const rTags: Tag[] = [];
+    if (rsiDelta == null) {
+      rTags.push({ label: "-", color: "muted" });
+    } else {
+      if (rsiDelta >= 3 && !rsiGreenActive) {
+        rTags.push({ label: "TAKE", color: "green" });
+        rsiGreenActive = true;
+      } else if (rsiGreenActive && rsiDelta <= -3) {
+        rTags.push({ label: "LEAVE", color: "green" });
+        rsiGreenActive = false;
+      }
+      if (rsiDelta <= -3 && !rsiRedActive) {
+        rTags.push({ label: "TAKE", color: "red" });
+        rsiRedActive = true;
+      } else if (rsiRedActive && rsiDelta >= 3) {
+        rTags.push({ label: "LEAVE", color: "red" });
+        rsiRedActive = false;
+      }
+      if (rTags.length === 0) rTags.push({ label: "-", color: "muted" });
+    }
+    rsiSignals.push(rTags);
   }
 
   return (
@@ -66,7 +98,7 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">NIFTY 50</TableHead>
               <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Bar Change</TableHead>
               <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">RSI (21)</TableHead>
-              <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">RSI MA (21)</TableHead>
+              <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-center">Δ RSI 21</TableHead>
               <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-center">Δ Bar Change</TableHead>
             </TableRow>
           </TableHeader>
@@ -77,6 +109,8 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
               const barChange = prevRow ? row.niftyPrice - prevRow.niftyPrice : null;
               const tags = signals[idx];
               const delta = deltas[idx];
+              const rTags = rsiSignals[idx];
+              const rDelta = rsiDeltas[idx];
 
               return (
                 <TableRow key={row.time} className="border-border hover:bg-secondary/40 transition-colors">
@@ -95,8 +129,26 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="font-mono text-sm text-right text-foreground">
-                    {row.rsiMA != null ? row.rsiMA.toFixed(2) : "—"}
+                  <TableCell className="text-center">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className={`font-mono text-sm ${rDelta != null ? (rDelta >= 0 ? "text-bullish" : "text-bearish") : "text-muted-foreground"}`}>
+                        {rDelta != null ? `${rDelta >= 0 ? "+" : ""}${rDelta.toFixed(2)}` : "—"}
+                      </span>
+                      {rTags.map((t, i) => (
+                        <span
+                          key={i}
+                          className={`font-mono text-xs font-semibold ${
+                            t.color === "green"
+                              ? "text-bullish"
+                              : t.color === "red"
+                              ? "text-bearish"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {t.label}
+                        </span>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-0.5">
