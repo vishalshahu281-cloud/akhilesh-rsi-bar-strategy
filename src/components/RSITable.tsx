@@ -26,9 +26,16 @@ export default function RSITable({ data }: { data: RSIDataPoint[] }) {
     const row = data[i];
     const prev = i > 0 ? data[i - 1] : null;
     const prev2 = i > 1 ? data[i - 2] : null;
-    const barChange = prev ? row.niftyPrice - prev.niftyPrice : null;
-    const prevBarChange = prev && prev2 ? prev.niftyPrice - prev2.niftyPrice : null;
-    const diff = barChange != null && prevBarChange != null ? barChange + prevBarChange : null;
+    // Δ Bar Change column now = (current RSI bracket) - (previous RSI bracket)
+    // where RSI bracket = current RSI - previous RSI
+    const currRsiBracket =
+      row.rsi != null && prev?.rsi != null ? row.rsi - prev.rsi : null;
+    const prevRsiBracket =
+      prev?.rsi != null && prev2?.rsi != null ? prev.rsi - prev2.rsi : null;
+    const diff =
+      currRsiBracket != null && prevRsiBracket != null
+        ? currRsiBracket - prevRsiBracket
+        : null;
     deltas.push(diff);
     const tags: Tag[] = [];
 
