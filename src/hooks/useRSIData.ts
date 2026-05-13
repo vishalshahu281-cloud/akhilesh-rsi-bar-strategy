@@ -31,28 +31,39 @@ export function useRSIData(refreshInterval = 60000, intervalMinutes = 5) {
         throw new Error("Supabase not configured");
       }
 
-      const res = await fetch(
-        `${supabaseUrl}/functions/v1/nifty-rsi?interval=${intervalMinutes}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'apikey': supabaseKey,
-          },
-        }
-      );
+      const headers = {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'apikey': supabaseKey,
+      };
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+      // 1. Try FYERS first
+      let json: RSIResponse | null = null;
+      try {
+        const r = await fetch(
+          `${supabaseUrl}/functions/v1/fyers-nifty-rsi?interval=${intervalMinutes}`,
+          { headers },
+        );
+        if (r.ok) json = await r.json();
+      } catch (e) {
+        console.warn('FYERS feed failed, falling back to nifty-rsi:', e);
       }
 
-      const json: RSIResponse = await res.json();
+      // 2. Fallback to Yahoo-backed nifty-rsi
+      if (!json || !json.success || !json.data?.length) {
+        const r = await fetch(
+          `${supabaseUrl}/functions/v1/nifty-rsi?interval=${intervalMinutes}`,
+          { headers },
+        );
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        json = await r.json();
+      }
 
-      if (json.success && json.data && json.data.length > 0) {
+      if (json && json.success && json.data && json.data.length > 0) {
         setData(json.data);
         setDate(json.date || "");
         setUsingFallback(false);
       } else {
-        throw new Error(json.error || "No live data available");
+        throw new Error(json?.error || "No live data available");
       }
     } catch (err) {
       console.warn("Live data unavailable, using simulated:", err);
