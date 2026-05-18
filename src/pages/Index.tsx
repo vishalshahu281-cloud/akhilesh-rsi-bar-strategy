@@ -5,6 +5,7 @@ import PriceChart from "@/components/PriceChart";
 import RSITable from "@/components/RSITable";
 import CallPutSignalTable from "@/components/CallPutSignalTable";
 import OptionTradesTable from "@/components/OptionTradesTable";
+import DhanHoldings from "@/components/DhanHoldings";
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -97,6 +98,7 @@ const Index = () => {
         {data.length > 0 && <CallPutSignalTable data={data} />}
         {data.length > 0 && <RSITable data={data} />}
         {data.length > 0 && <OptionTradesTable data={data} />}
+        <DhanHoldings />
       </main>
 
       <footer className="border-t border-border py-4 text-center text-xs font-mono text-muted-foreground">
