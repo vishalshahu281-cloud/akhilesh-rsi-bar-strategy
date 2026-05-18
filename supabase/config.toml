@@ -1,1 +1,4 @@
 project_id = "jifdofxwgeohnkvrckig"
+
+[functions.dhan-ws]
+verify_jwt = false
