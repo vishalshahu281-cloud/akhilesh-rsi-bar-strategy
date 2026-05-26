@@ -12,7 +12,6 @@ interface Trade {
   entryTime: string;
   entryNifty: number;
   entryPremium: number;
-  entryReason: string;
   exitTime?: string;
   exitNifty?: number;
   exitPremium?: number;
@@ -21,7 +20,7 @@ interface Trade {
   peakPremium: number;
 }
 
-const ENTRY_PREMIUM = 0; // Rs — paper-trading baseline for ATM
+const ENTRY_PREMIUM = 50; // Rs — paper-trading baseline for ATM
 const ATM_DELTA = 0.5;    // option delta approximation for ATM
 const TARGET_POINTS = 40;
 
@@ -32,7 +31,7 @@ function atmStrike(price: number): number {
 function premium(side: Side, entryNifty: number, currentNifty: number): number {
   const move = (currentNifty - entryNifty) * ATM_DELTA;
   const px = side === "CE" ? ENTRY_PREMIUM + move : ENTRY_PREMIUM - move;
-  return px;
+  return Math.max(0.05, px);
 }
 
 function addOneMinute(hhmm: string): string {
@@ -65,10 +64,6 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
     const s = signals[i];
     const bar = { time: s.time, niftyPrice: s.niftyPrice };
 
-    const barTrig = s.delta != null && Math.abs(s.delta) >= 18;
-    const rsiTrig = s.rsiDelta != null && Math.abs(s.rsiDelta) >= 4;
-    const entryReason = barTrig && rsiTrig ? "Δ Bar + Δ RSI 21" : barTrig ? "Δ Bar" : rsiTrig ? "Δ RSI 21" : "—";
-
     // 1. Update peak + check TP/SL on open trades
     for (const t of [openCE, openPE]) {
       if (!t) continue;
@@ -99,7 +94,6 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
           entryPremium: ENTRY_PREMIUM,
           peakPremium: ENTRY_PREMIUM,
           exitReason: "OPEN",
-          entryReason,
         };
         trades.push(openCE);
       } else if (ev === "RED_TAKE" && !openPE) {
@@ -111,7 +105,6 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
           entryPremium: ENTRY_PREMIUM,
           peakPremium: ENTRY_PREMIUM,
           exitReason: "OPEN",
-          entryReason,
         };
         trades.push(openPE);
       } else if (ev === "GREEN_LEAVE" && openCE) {
@@ -152,7 +145,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±4) OR BOTH • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) signal • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
@@ -173,7 +166,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
 
       {trades.length === 0 ? (
         <div className="p-8 text-center font-mono text-sm text-muted-foreground">
-          No option trades triggered yet — waiting for Δ Bar Change ≥ ±18 or Δ RSI 21 ≥ ±4.
+          No option trades triggered yet — waiting for Δ Bar Change ≥ ±18 or Δ RSI 21 ≥ ±3.
         </div>
       ) : (
         <div className="max-h-[480px] overflow-auto mt-4">
@@ -185,7 +178,6 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Entry Time</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Entry NIFTY</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Entry ₹</TableHead>
-                <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Entry Reason</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Exit Time</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Exit ₹</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Reason</TableHead>
@@ -210,9 +202,6 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                     </TableCell>
                     <TableCell className="font-mono text-sm text-foreground text-right">
                       {t.entryPremium.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-foreground">
-                      {t.entryReason}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       {t.exitTime ?? "—"}
