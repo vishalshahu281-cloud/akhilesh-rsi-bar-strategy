@@ -46,9 +46,9 @@ export function computeBarSignals(data: RSIDataPoint[]): BarSignal[] {
         : null;
 
     const greenTrigger =
-      (delta != null && delta >= 18) || (rsiDelta != null && rsiDelta >= 3);
+      (delta != null && delta >= 18) || (rsiDelta != null && rsiDelta >= 4);
     const redTrigger =
-      (delta != null && delta <= -18) || (rsiDelta != null && rsiDelta <= -3);
+      (delta != null && delta <= -18) || (rsiDelta != null && rsiDelta <= -4);
 
     const events: SignalEvent[] = [];
     if (greenTrigger && !greenActive) {
