@@ -177,13 +177,31 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
 function reasonLabel(r?: Trade["exitReason"]) {
   switch (r) {
-    case "STOP_NEG": return "Negative move → instant stop @ entry";
-    case "TRAIL_35": return "Peak ≥ +35 → trail locked +35 hit";
-    case "TRAIL_80": return "Peak ≥ +80 → trail locked +80 hit";
-    case "CPSIG_EXIT": return "Opposite CALL/PUT signal (+1 min)";
-    case "EOD_FLAT": return "Never reached +35 → flat @ entry";
+    case "STOP_NEG": return "Stop @ Entry (−)";
+    case "TRAIL_35": return "Trail +35";
+    case "TRAIL_80": return "Trail +80";
+    case "CPSIG_EXIT": return "CALL/PUT Sig";
+    case "EOD_FLAT": return "Flat @ Entry";
     case "OPEN":
-    default: return "Open — entry @ +1 min close";
+    default: return "Open";
+  }
+}
+
+function reasonExplanation(r?: Trade["exitReason"]) {
+  switch (r) {
+    case "STOP_NEG":
+      return "Peak profit never reached +35 and premium went negative — instant stop at entry price.";
+    case "TRAIL_35":
+      return "Peak profit reached +35; trailing stop locked at +35 and was hit on pullback.";
+    case "TRAIL_80":
+      return "Peak profit reached +80; trailing stop locked at +80 and was hit on pullback.";
+    case "CPSIG_EXIT":
+      return "Opposite CALL/PUT signal fired while peak was in +35–+80 zone — exited at +1 min after that signal.";
+    case "EOD_FLAT":
+      return "End of session reached; peak never hit +35 — flattened at entry price.";
+    case "OPEN":
+    default:
+      return "Trade still open. Entry taken at the close of the +1 min candle after the Δ Bar / Δ RSI 21 trigger.";
   }
 }
 
@@ -269,6 +287,9 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {reasonLabel(t.exitReason)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[280px] whitespace-normal leading-snug">
+                      {reasonExplanation(t.exitReason)}
                     </TableCell>
                     <TableCell className={`font-mono text-sm text-right font-bold ${pnl == null ? "text-muted-foreground" : pnl >= 0 ? "text-bullish" : "text-bearish"}`}>
                       {pnl == null ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
