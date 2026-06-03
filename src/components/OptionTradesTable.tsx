@@ -123,8 +123,8 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
         continue;
       }
 
-      // Preference 2b: peak >= +80 → trailing stop locked at +80
-      if (peakProfit >= TRAIL2_TRIGGER && profit <= TRAIL2_TRIGGER) {
+      // Peak reached +80 → trailing stop locked at +80; exit only when price falls back below +80
+      if (peakProfit >= TRAIL2_TRIGGER && profit < TRAIL2_TRIGGER) {
         closeTrade(t, i, "TRAIL_80", t.entryPremium + TRAIL2_TRIGGER);
         if (slot === "CE") openCE = null; else openPE = null;
         continue;
@@ -132,8 +132,8 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
       // In +35..+80 zone
       if (peakProfit >= TRAIL1_TRIGGER && peakProfit < TRAIL2_TRIGGER) {
-        // Trailing stop @ +35
-        if (profit <= TRAIL1_TRIGGER) {
+        // Trailing stop locked at +35; exit only when price falls back below +35
+        if (profit < TRAIL1_TRIGGER) {
           closeTrade(t, i, "TRAIL_35", t.entryPremium + TRAIL1_TRIGGER);
           if (slot === "CE") openCE = null; else openPE = null;
           continue;
@@ -184,6 +184,24 @@ function reasonLabel(r?: Trade["exitReason"]) {
     case "EOD_FLAT": return "Flat @ Entry";
     case "OPEN":
     default: return "Open";
+  }
+}
+
+function reasonExplanation(r?: Trade["exitReason"]) {
+  switch (r) {
+    case "STOP_NEG":
+      return "Peak profit never reached +35 and premium went negative — instant stop at entry price.";
+    case "TRAIL_35":
+      return "Peak profit reached +35; trailing stop locked at +35 and was hit on pullback.";
+    case "TRAIL_80":
+      return "Peak profit reached +80; trailing stop locked at +80 and was hit on pullback.";
+    case "CPSIG_EXIT":
+      return "Opposite CALL/PUT signal fired while peak was in +35–+80 zone — exited at +1 min after that signal.";
+    case "EOD_FLAT":
+      return "End of session reached; peak never hit +35 — flattened at entry price.";
+    case "OPEN":
+    default:
+      return "Trade still open. Entry taken at the close of the +1 min candle after the Δ Bar / Δ RSI 21 trigger.";
   }
 }
 
@@ -238,6 +256,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Exit Time</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Exit ₹</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Reason</TableHead>
+                <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Exit Explanation</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">P&amp;L ₹</TableHead>
               </TableRow>
             </TableHeader>
@@ -268,6 +287,9 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {reasonLabel(t.exitReason)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[280px] whitespace-normal leading-snug">
+                      {reasonExplanation(t.exitReason)}
                     </TableCell>
                     <TableCell className={`font-mono text-sm text-right font-bold ${pnl == null ? "text-muted-foreground" : pnl >= 0 ? "text-bullish" : "text-bearish"}`}>
                       {pnl == null ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
