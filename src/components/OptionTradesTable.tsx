@@ -123,8 +123,8 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
         continue;
       }
 
-      // Preference 2b: peak >= +80 → trailing stop locked at +80
-      if (peakProfit >= TRAIL2_TRIGGER && profit <= TRAIL2_TRIGGER) {
+      // Peak reached +80 → trailing stop locked at +80; exit only when price falls back below +80
+      if (peakProfit >= TRAIL2_TRIGGER && profit < TRAIL2_TRIGGER) {
         closeTrade(t, i, "TRAIL_80", t.entryPremium + TRAIL2_TRIGGER);
         if (slot === "CE") openCE = null; else openPE = null;
         continue;
@@ -132,8 +132,8 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
       // In +35..+80 zone
       if (peakProfit >= TRAIL1_TRIGGER && peakProfit < TRAIL2_TRIGGER) {
-        // Trailing stop @ +35
-        if (profit <= TRAIL1_TRIGGER) {
+        // Trailing stop locked at +35; exit only when price falls back below +35
+        if (profit < TRAIL1_TRIGGER) {
           closeTrade(t, i, "TRAIL_35", t.entryPremium + TRAIL1_TRIGGER);
           if (slot === "CE") openCE = null; else openPE = null;
           continue;
