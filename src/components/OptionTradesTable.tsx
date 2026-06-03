@@ -177,13 +177,13 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
 function reasonLabel(r?: Trade["exitReason"]) {
   switch (r) {
-    case "STOP_NEG": return "Stop @ Entry (−)";
-    case "TRAIL_35": return "Trail +35";
-    case "TRAIL_80": return "Trail +80";
-    case "CPSIG_EXIT": return "CALL/PUT Sig";
-    case "EOD_FLAT": return "Flat @ Entry";
+    case "STOP_NEG": return "Negative move → instant stop @ entry";
+    case "TRAIL_35": return "Peak ≥ +35 → trail locked +35 hit";
+    case "TRAIL_80": return "Peak ≥ +80 → trail locked +80 hit";
+    case "CPSIG_EXIT": return "Opposite CALL/PUT signal (+1 min)";
+    case "EOD_FLAT": return "Never reached +35 → flat @ entry";
     case "OPEN":
-    default: return "Open";
+    default: return "Open — entry @ +1 min close";
   }
 }
 
@@ -238,6 +238,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Exit Time</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">Exit ₹</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Reason</TableHead>
+                <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card">Exit Explanation</TableHead>
                 <TableHead className="font-mono text-xs text-muted-foreground sticky top-0 bg-card text-right">P&amp;L ₹</TableHead>
               </TableRow>
             </TableHeader>
