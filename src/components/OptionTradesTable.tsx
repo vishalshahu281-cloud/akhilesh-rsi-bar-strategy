@@ -22,7 +22,7 @@ interface Trade {
 
 const ENTRY_PREMIUM = 50; // Rs — paper-trading baseline for ATM
 const ATM_DELTA = 0.5;    // option delta approximation for ATM
-const TARGET_POINTS = 40; // book profit at +40; if it goes beyond, ride till opp LEAVE
+const TARGET_POINTS = 40;
 
 function atmStrike(price: number): number {
   return Math.round(price / 50) * 50;
@@ -70,21 +70,17 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
       const px = premium(t.side, t.entryNifty, bar.niftyPrice);
       if (px > t.peakPremium) t.peakPremium = px;
 
-      const targetPx = t.entryPremium + TARGET_POINTS;
-      const reachedTarget = t.peakPremium >= targetPx;
-
-      if (reachedTarget && px < targetPx) {
-        // Peak crossed +40, now pulled back below +40 → lock in +40
-        closeTrade(t, bar, "TARGET", targetPx);
+      // Target: +40 Rs profit
+      if (px - t.entryPremium >= TARGET_POINTS) {
+        closeTrade(t, bar, "TARGET", t.entryPremium + TARGET_POINTS);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (!reachedTarget && px < t.entryPremium) {
-        // Dipped below entry before hitting target → flat exit, no loss
+      } else if (t.peakPremium > t.entryPremium && px <= t.entryPremium) {
+        // Stop: rose above entry then came back to entry
         closeTrade(t, bar, "STOP", t.entryPremium);
         if (t.side === "CE") openCE = null;
         else openPE = null;
       }
-      // Else: hold — either still climbing toward +40, or sitting above +40 → ride till opp LEAVE
     }
 
     // 2. Process events on this bar
@@ -127,7 +123,7 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 function reasonLabel(r?: Trade["exitReason"]) {
   switch (r) {
     case "TARGET": return "Target +40";
-    case "STOP": return "Flat @ Entry";
+    case "STOP": return "Stop @ Entry";
     case "OPPOSITE_LEAVE": return "Opp. LEAVE";
     case "OPEN":
     default: return "Open";
@@ -149,7 +145,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) • Premium ₹{ENTRY_PREMIUM} synthetic • Δ≈{ATM_DELTA} • Book at +{TARGET_POINTS}; if it goes beyond, ride till Opp. LEAVE • Flat-exit @ entry if it dips below before target
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) signal • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
