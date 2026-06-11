@@ -79,8 +79,8 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
         closeTrade(t, bar, "TARGET", t.entryPremium + TARGET_BOOK);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (!peakCrossedTrigger && px <= t.entryPremium) {
-        // Never crossed trigger and back at entry → exit flat, no loss
+      } else if (!peakCrossedTrigger && px < t.entryPremium) {
+        // Premium crossed below entry (would go negative) → exit flat at entry, no loss
         closeTrade(t, bar, "STOP", t.entryPremium);
         if (t.side === "CE") openCE = null;
         else openPE = null;
