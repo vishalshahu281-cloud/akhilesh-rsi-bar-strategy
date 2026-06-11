@@ -75,9 +75,9 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
         closeTrade(t, bar, "TARGET", t.entryPremium + TARGET_POINTS);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (t.peakPremium > t.entryPremium && px <= t.entryPremium) {
-        // Stop: rose above entry then came back to entry
-        closeTrade(t, bar, "STOP", t.entryPremium);
+      } else if (px < t.entryPremium) {
+        // Stop: P&L crossed below 0 — exit immediately
+        closeTrade(t, bar, "STOP", px);
         if (t.side === "CE") openCE = null;
         else openPE = null;
       }
