@@ -22,8 +22,7 @@ interface Trade {
 
 const ENTRY_PREMIUM = 50; // Rs — paper-trading baseline for ATM
 const ATM_DELTA = 0.5;    // option delta approximation for ATM
-const TARGET_TRIGGER = 40; // once peak crosses +40, trail kicks in
-const TARGET_BOOK = 35;    // booked profit if it pulls back after crossing trigger
+const TARGET_POINTS = 40; // book profit at +40; if it goes beyond, ride till opp LEAVE
 
 function atmStrike(price: number): number {
   return Math.round(price / 50) * 50;
@@ -71,20 +70,21 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
       const px = premium(t.side, t.entryNifty, bar.niftyPrice);
       if (px > t.peakPremium) t.peakPremium = px;
 
-      const peakCrossedTrigger =
-        t.peakPremium >= t.entryPremium + TARGET_TRIGGER;
+      const targetPx = t.entryPremium + TARGET_POINTS;
+      const peakBeyondTarget = t.peakPremium > targetPx;
 
-      if (peakCrossedTrigger && px < t.peakPremium) {
-        // Crossed +40, now pulling back → book +35
-        closeTrade(t, bar, "TARGET", t.entryPremium + TARGET_BOOK);
+      if (!peakBeyondTarget && px >= targetPx) {
+        // Hit +40 exactly (not yet beyond) → book +40
+        closeTrade(t, bar, "TARGET", targetPx);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (!peakCrossedTrigger && px < t.entryPremium) {
-        // Premium crossed below entry (would go negative) → exit flat at entry, no loss
+      } else if (!peakBeyondTarget && px < t.entryPremium) {
+        // Below entry before hitting target → flat exit, no loss
         closeTrade(t, bar, "STOP", t.entryPremium);
         if (t.side === "CE") openCE = null;
         else openPE = null;
       }
+      // If peak went beyond +40 → ride till opposite LEAVE (no early book)
     }
 
     // 2. Process events on this bar
@@ -126,7 +126,7 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
 function reasonLabel(r?: Trade["exitReason"]) {
   switch (r) {
-    case "TARGET": return "Booked +35 (after >+40)";
+    case "TARGET": return "Target +40";
     case "STOP": return "Flat @ Entry";
     case "OPPOSITE_LEAVE": return "Opp. LEAVE";
     case "OPEN":
@@ -149,7 +149,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) • Premium ₹{ENTRY_PREMIUM} synthetic • Δ≈{ATM_DELTA} • Flat-exit @ entry (no loss) • Trail: if peak ≥+{TARGET_TRIGGER} and pulls back → book +{TARGET_BOOK} • Else ride till Opp. LEAVE
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) • Premium ₹{ENTRY_PREMIUM} synthetic • Δ≈{ATM_DELTA} • Book at +{TARGET_POINTS}; if it goes beyond, ride till Opp. LEAVE • Flat-exit @ entry if it dips below before target
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
