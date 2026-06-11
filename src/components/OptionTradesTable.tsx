@@ -75,9 +75,9 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
         closeTrade(t, bar, "TARGET", t.entryPremium + TARGET_POINTS);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (t.peakPremium > t.entryPremium && px <= t.entryPremium) {
-        // Stop: rose above entry then came back to entry
-        closeTrade(t, bar, "STOP", t.entryPremium);
+      } else if (px < t.entryPremium) {
+        // Stop: P&L crossed below 0 — exit immediately
+        closeTrade(t, bar, "STOP", px);
         if (t.side === "CE") openCE = null;
         else openPE = null;
       }
@@ -145,7 +145,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) signal • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Stop @ entry
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) signal • Premium base ₹{ENTRY_PREMIUM} (synthetic — historical ATM LTP unavailable) • Δ≈{ATM_DELTA} • Target +{TARGET_POINTS} • Exit if P&L &lt; 0
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
