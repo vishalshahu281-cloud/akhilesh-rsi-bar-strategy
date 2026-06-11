@@ -149,7 +149,7 @@ export default function OptionTradesTable({ data }: { data: RSIDataPoint[] }) {
             Option Trades — Paper Backtest (ATM CE / PE)
           </h2>
           <p className="text-xs font-mono text-muted-foreground">
-            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) • Premium ₹{ENTRY_PREMIUM} synthetic • Δ≈{ATM_DELTA} • Flat-exit @ entry (no loss) • Trail: if peak ≥+{TARGET_TRIGGER} and pulls back → book +{TARGET_BOOK} • Else ride till Opp. LEAVE
+            Entry +1 min after Δ Bar (≥±18) OR Δ RSI 21 (≥±3) • Premium ₹{ENTRY_PREMIUM} synthetic • Δ≈{ATM_DELTA} • Book at +{TARGET_POINTS}; if it goes beyond, ride till Opp. LEAVE • Flat-exit @ entry if it dips below before target
           </p>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono">
