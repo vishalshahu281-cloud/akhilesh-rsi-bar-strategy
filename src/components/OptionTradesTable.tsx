@@ -126,7 +126,7 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
 
 function reasonLabel(r?: Trade["exitReason"]) {
   switch (r) {
-    case "TARGET": return "Booked +35 (after >+40)";
+    case "TARGET": return "Target +40";
     case "STOP": return "Flat @ Entry";
     case "OPPOSITE_LEAVE": return "Opp. LEAVE";
     case "OPEN":
