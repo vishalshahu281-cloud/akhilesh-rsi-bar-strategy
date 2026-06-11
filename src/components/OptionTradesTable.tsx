@@ -71,20 +71,20 @@ function runBacktest(data: RSIDataPoint[]): Trade[] {
       if (px > t.peakPremium) t.peakPremium = px;
 
       const targetPx = t.entryPremium + TARGET_POINTS;
-      const peakBeyondTarget = t.peakPremium > targetPx;
+      const reachedTarget = t.peakPremium >= targetPx;
 
-      if (!peakBeyondTarget && px >= targetPx) {
-        // Hit +40 exactly (not yet beyond) → book +40
+      if (reachedTarget && px < targetPx) {
+        // Peak crossed +40, now pulled back below +40 → lock in +40
         closeTrade(t, bar, "TARGET", targetPx);
         if (t.side === "CE") openCE = null;
         else openPE = null;
-      } else if (!peakBeyondTarget && px < t.entryPremium) {
-        // Below entry before hitting target → flat exit, no loss
+      } else if (!reachedTarget && px < t.entryPremium) {
+        // Dipped below entry before hitting target → flat exit, no loss
         closeTrade(t, bar, "STOP", t.entryPremium);
         if (t.side === "CE") openCE = null;
         else openPE = null;
       }
-      // If peak went beyond +40 → ride till opposite LEAVE (no early book)
+      // Else: hold — either still climbing toward +40, or sitting above +40 → ride till opp LEAVE
     }
 
     // 2. Process events on this bar
